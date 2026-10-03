@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VisionGrid — Prevención de ceguera (Rejilla de Amsler y Sensibilidad al Contraste)</title>
-  <meta name="description" content="Auto-monitorización macular para detección precoz de DMAE y pérdida de contraste en Glaucoma. 100% privado en tu navegador.">
+  <title>VisionGrid v2.0 — Prevención de ceguera (Rejilla de Amsler Calibrada ISO 7810 y Pelli-Robson)</title>
+  <meta name="description" content="Auto-monitorización macular con Rejilla de Amsler calibrada a 20º visuales mediante tarjeta ISO y test Pelli-Robson de Glaucoma. 100% privado en tu navegador.">
   <style>
     :root {
       --bg: #0F172A;
@@ -34,7 +34,7 @@
 
     .container {
       width: 100%;
-      max-width: 680px;
+      max-width: 720px;
       margin: 0 auto;
     }
 
@@ -83,10 +83,11 @@
       background: rgba(15, 23, 42, 0.6);
       padding: 0.35rem;
       border-radius: 12px;
+      overflow-x: auto;
     }
     .tab-btn {
       flex: 1;
-      padding: 0.75rem;
+      padding: 0.75rem 1rem;
       background: none;
       border: none;
       color: var(--text-muted);
@@ -95,10 +96,36 @@
       border-radius: 9px;
       cursor: pointer;
       transition: all 0.2s;
+      white-space: nowrap;
     }
     .tab-btn.active {
       background: var(--primary);
       color: #0F172A;
+    }
+
+    /* Calibrador de Pantalla */
+    .calib-card {
+      background: #0B132B;
+      border: 2px dashed var(--primary);
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .virtual-card {
+      height: 54px;
+      background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+      border: 2px solid #60A5FA;
+      border-radius: 8px;
+      margin: 1rem auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: white;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+      max-width: 100%;
     }
 
     /* Amsler Grid */
@@ -114,7 +141,7 @@
       border-radius: 8px;
       cursor: crosshair;
       touch-action: none;
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      box-shadow: 0 0 25px rgba(0,0,0,0.6);
     }
 
     .amsler-controls {
@@ -194,15 +221,17 @@
     .res-preferente { background: rgba(245, 158, 11, 0.2); border-color: var(--warning); color: #FCD34D; }
     .res-normal { background: rgba(16, 185, 129, 0.2); border-color: var(--success); color: #6EE7B7; }
 
-    .disclaimer-box {
-      background: rgba(245, 158, 11, 0.15);
-      border-left: 4px solid var(--warning);
+    pre.dossier {
+      background: #030712;
+      border: 1px solid #1E293B;
       padding: 1rem;
-      border-radius: 0 8px 8px 0;
+      border-radius: 10px;
       font-size: 0.85rem;
-      color: #FDE68A;
-      margin-top: 1.5rem;
-      line-height: 1.4;
+      color: #93C5FD;
+      white-space: pre-wrap;
+      max-height: 320px;
+      overflow-y: auto;
+      margin-top: 1rem;
     }
   </style>
 </head>
@@ -210,14 +239,15 @@
 
 <div class="container">
   <header>
-    <div class="badge">👁️ PREVENCIÓN MACULAR Y DE NERVIO ÓPTICO</div>
+    <div class="badge">👁️ PROTOCOLO OFTALMOLÓGICO v2.0 · CALIBRACIÓN ISO 7810</div>
     <h1>VisionGrid</h1>
-    <p class="subtitle">Auto-monitorización de DMAE (Amsler) y sensibilidad al contraste (Glaucoma)</p>
+    <p class="subtitle">Auto-monitorización de DMAE (Amsler a 20º de campo macular) y contraste (Glaucoma)</p>
   </header>
 
   <div class="tabs">
     <button class="tab-btn active" id="tabAmsler" onclick="cambiarTab('amsler')">🕸️ Rejilla de Amsler (Mácula)</button>
-    <button class="tab-btn" id="tabContrast" onclick="cambiarTab('contrast')">🌗 Test de Contraste (Glaucoma)</button>
+    <button class="tab-btn" id="tabContrast" onclick="cambiarTab('contrast')">🌗 Test de Contraste (Pelli-Robson)</button>
+    <button class="tab-btn" id="tabDossier" onclick="cambiarTab('dossier')">📋 Dossier para Retinólogo</button>
   </div>
 
   <div class="card" id="mainContent">
@@ -232,6 +262,12 @@
   var tabActual = 'amsler';
   var marcasAmsler = [];
   var lineasOnduladasDetectadas = false;
+  var zonasBorradasDetectadas = false;
+  var ojoSeleccionado = 'derecho';
+
+  // Calibración de pantalla (ancho en píxeles de tarjeta ISO 85.6mm)
+  var anchoTarjetaPx = 320;
+  var distanciaOjoCm = 33;
 
   // Estado del test de contraste
   var nivelContrasteActual = 1;
@@ -241,220 +277,249 @@
     tabActual = tab;
     document.getElementById('tabAmsler').classList.toggle('active', tab === 'amsler');
     document.getElementById('tabContrast').classList.toggle('active', tab === 'contrast');
+    document.getElementById('tabDossier').classList.toggle('active', tab === 'dossier');
+
     if (tab === 'amsler') renderAmsler();
-    else renderContrast();
+    else if (tab === 'contrast') renderContrast();
+    else renderDossier();
   }
 
-  // ------------------------------------------------------------------ Pestaña Amsler
   function renderAmsler() {
-    marcasAmsler = [];
-    lineasOnduladasDetectadas = false;
+    var calib = VisionGrid.calibrarPantallaISO(anchoTarjetaPx, distanciaOjoCm);
+    var canvasSize = Math.max(300, Math.min(480, calib.tamanoRejillaAmslerPx));
 
-    var html = `
-      <div style="margin-bottom:1rem;">
-        <h3 style="font-size:1.2rem; margin-bottom:0.35rem;">Instrucciones para la prueba:</h3>
-        <ol style="margin-left:1.25rem; font-size:0.95rem; color:#CBD5E1; line-height:1.5;">
-          <li>Ponte tus gafas de lectura habituales si las utilizas.</li>
-          <li>Colócate a unos <strong>35-40 cm</strong> de la pantalla con buena luz.</li>
-          <li><strong>Tápate un ojo con la mano</strong> y mira fijamente al <u>punto blanco central</u>.</li>
-          <li>Sin apartar la vista del centro: ¿Ves las 4 esquinas? ¿Hay alguna línea que se vea ondulada, curvada o manchada?</li>
-          <li>Si ves alguna línea torcida o borrosa, <strong>toca sobre la cuadrícula</strong> para marcarla.</li>
-        </ol>
+    var main = document.getElementById('mainContent');
+    main.innerHTML = `
+      <div class="calib-card">
+        <h4 style="color:#38BDF8; font-size:1.05rem; margin-bottom:0.25rem;">📐 Calibración Óptica de Pantalla (ISO/IEC 7810)</h4>
+        <p style="font-size:0.85rem; color:#CBD5E1;">
+          Apoya una tarjeta de crédito, débito o DNI sobre la tarjeta azul y ajusta el deslizador hasta que coincidan exactamente en anchura. Esto garantiza que la rejilla cubra exactamente <strong>20º de campo macular a 33 cm</strong>.
+        </p>
+        <div class="virtual-card" id="virtualCard" style="width:${anchoTarjetaPx}px;">
+          💳 DNI / Tarjeta Bancaria (85.6 mm)
+        </div>
+        <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:0.5rem;">
+          <small>Más estrecha</small>
+          <input type="range" min="200" max="450" value="${anchoTarjetaPx}" oninput="actualizarCalibracion(this.value)" style="width:200px;">
+          <small>Más ancha</small>
+        </div>
+        <div style="font-size:0.8rem; color:#94A3B8; margin-top:0.5rem;">
+          Resolución calculada: <strong>${calib.pxPorMm} px/mm</strong> (${calib.dpiEstimado} DPI) · Tamaño físico Amsler: <strong>10 × 10 cm</strong>
+        </div>
       </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h3 style="font-size:1.25rem;">Test de la Rejilla de Amsler</h3>
+        <select id="ojoSelect" onchange="ojoSeleccionado=this.value" style="background:#0F172A; color:white; border:1px solid var(--border); padding:0.4rem 0.75rem; border-radius:8px;">
+          <option value="derecho" ${ojoSeleccionado==='derecho'?'selected':''}>Ojo Derecho (tapar izquierdo)</option>
+          <option value="izquierdo" ${ojoSeleccionado==='izquierdo'?'selected':''}>Ojo Izquierdo (tapar derecho)</option>
+        </select>
+      </div>
+
+      <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">
+        <strong>Instrucciones:</strong> Si usas gafas de lectura, póntelas. Tápate un ojo. Mira <strong>FIJAMENTE al punto blanco central</strong> a unos 33 cm de distancia. Sin apartar la mirada del centro, haz clic sobre cualquier zona donde veas líneas onduladas o manchas borrosas.
+      </p>
 
       <div class="amsler-wrapper">
-        <canvas id="amslerCanvas" width="320" height="320"></canvas>
+        <canvas id="amslerCanvas" width="${canvasSize}" height="${canvasSize}"></canvas>
+
+        <div style="display:flex; gap:12px; margin-top:0.75rem; font-size:0.85rem;">
+          <label style="cursor:pointer;"><input type="checkbox" id="chkOnduladas" onchange="lineasOnduladasDetectadas=this.checked; evaluarYMostrarAmsler();"> Veo líneas torcidas/onduladas</label>
+          <label style="cursor:pointer;"><input type="checkbox" id="chkBorradas" onchange="zonasBorradasDetectadas=this.checked; evaluarYMostrarAmsler();"> Veo zonas borradas o ciegas</label>
+        </div>
+
+        <div class="amsler-controls">
+          <button class="btn btn-secondary" onclick="marcasAmsler=[]; renderAmsler();">🔄 Limpiar marcas</button>
+          <button class="btn" onclick="evaluarYMostrarAmsler()">Diagnosticar Rejilla</button>
+        </div>
       </div>
 
-      <div style="background:#0F172A; border-radius:12px; padding:1rem; margin-bottom:1rem;">
-        <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; font-weight:700;">
-          <input type="checkbox" id="checkOnduladas" style="width:20px; height:20px;" onchange="lineasOnduladasDetectadas = this.checked">
-          <span>⚠️ Veo líneas torcidas, onduladas o distorsionadas (Metamorfopsia)</span>
-        </label>
-      </div>
-
-      <div class="amsler-controls">
-        <button class="btn btn-secondary" onclick="limpiarAmsler()">Borrar marcas</button>
-        <button class="btn" onclick="evaluarAmslerResultado()">Evaluar este ojo ✔️</button>
-      </div>
-
-      <div id="amslerResultBox"></div>
-
-      <div class="disclaimer-box">
-        <strong>⚠️ Nota de salud ocular:</strong> Cualquier línea recta que de repente se perciba curvada o torcida requiere revisión urgente con el oftalmólogo en 48-72h para descartar DMAE exudativa aguda.
-      </div>
+      <div id="resultadoAmslerBox"></div>
     `;
 
-    document.getElementById('mainContent').innerHTML = html;
-    dibujarAmslerCanvas();
+    iniciarCanvasAmsler(canvasSize);
   }
 
-  function dibujarAmslerCanvas() {
+  function actualizarCalibracion(val) {
+    anchoTarjetaPx = parseInt(val, 10);
+    document.getElementById('virtualCard').style.width = anchoTarjetaPx + 'px';
+    var calib = VisionGrid.calibrarPantallaISO(anchoTarjetaPx, distanciaOjoCm);
+    renderAmsler();
+  }
+
+  function iniciarCanvasAmsler(size) {
     var canvas = document.getElementById('amslerCanvas');
     if (!canvas) return;
     var ctx = canvas.getContext('2d');
-    var w = canvas.width;
-    var celdas = 20;
-    var paso = w / celdas;
+    var cells = 20;
+    var cellSize = size / cells;
 
-    // Fondo negro
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, w, w);
+    function dibujar() {
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, size, size);
 
-    // Cuadrícula blanca
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = '#FFFFFF';
-    for (var i = 0; i <= celdas; i++) {
-      var pos = i * paso;
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1;
+
+      for (var i = 0; i <= cells; i++) {
+        var pos = i * cellSize;
+        ctx.beginPath();
+        ctx.moveTo(pos, 0);
+        ctx.lineTo(pos, size);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, pos);
+        ctx.lineTo(size, pos);
+        ctx.stroke();
+      }
+
+      // Punto central blanco foveal
+      var centro = size / 2;
+      ctx.fillStyle = '#FFFFFF';
       ctx.beginPath();
-      ctx.moveTo(pos, 0); ctx.lineTo(pos, w);
-      ctx.stroke();
+      ctx.arc(centro, centro, cellSize * 0.35, 0, Math.PI * 2);
+      ctx.fill();
 
-      ctx.beginPath();
-      ctx.moveTo(0, pos); ctx.lineTo(w, pos);
-      ctx.stroke();
+      // Dibujar marcas del usuario
+      marcasAmsler.forEach(function (m) {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
+        ctx.beginPath();
+        ctx.arc(m.x * cellSize + cellSize / 2, m.y * cellSize + cellSize / 2, cellSize * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+      });
     }
 
-    // Punto blanco central de fijación
-    ctx.beginPath();
-    ctx.arc(w / 2, w / 2, 4.5, 0, 2 * Math.PI);
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fill();
+    canvas.addEventListener('click', function (e) {
+      var rect = canvas.getBoundingClientRect();
+      var clickX = e.clientX - rect.left;
+      var clickY = e.clientY - rect.top;
+      var cellX = Math.floor(clickX / cellSize);
+      var cellY = Math.floor(clickY / cellSize);
 
-    // Dibujar marcas del usuario
-    marcasAmsler.forEach(function (m) {
-      ctx.beginPath();
-      ctx.arc(m.pixelX, m.pixelY, 12, 0, 2 * Math.PI);
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#EF4444';
-      ctx.stroke();
+      marcasAmsler.push({ x: cellX, y: cellY, tipo: 'anomalia' });
+      dibujar();
+      evaluarYMostrarAmsler();
     });
 
-    // Evento de toque/clic
-    canvas.onclick = function (e) {
-      var rect = canvas.getBoundingClientRect();
-      var px = (e.clientX - rect.left) * (canvas.width / rect.width);
-      var py = (e.clientY - rect.top) * (canvas.height / rect.height);
-      var celdaX = Math.floor(px / paso);
-      var celdaY = Math.floor(py / paso);
-
-      marcasAmsler.push({ x: celdaX, y: celdaY, pixelX: px, pixelY: py });
-      dibujarAmslerCanvas();
-    };
+    dibujar();
   }
 
-  function limpiarAmsler() {
-    marcasAmsler = [];
-    dibujarAmslerCanvas();
-    document.getElementById('amslerResultBox').innerHTML = '';
-  }
-
-  function evaluarAmslerResultado() {
-    var checkEl = document.getElementById('checkOnduladas');
-    var onduladas = checkEl ? checkEl.checked : false;
-
+  function evaluarYMostrarAmsler() {
     var res = VisionGrid.evaluarAmsler({
-      lineasOnduladas: onduladas,
-      zonasBorradas: marcasAmsler.length > 0,
+      lineasOnduladas: lineasOnduladasDetectadas,
+      zonasBorradas: zonasBorradasDetectadas,
       zonasMarcadas: marcasAmsler
     });
 
-    var rBox = document.getElementById('amslerResultBox');
-    var html = `
-      <div class="result-alert res-${res.urgencia}">
-        <h4 style="font-size:1.15rem; font-weight:800; margin-bottom:0.35rem;">
-          ${res.urgencia === 'urgente' ? '🚨 ATENCIÓN URGENTE REQUERIDA' : (res.urgencia === 'preferente' ? '⚠️ ANOMALÍA DETECTADA' : '✅ REJILLA SIN DISTORSIONES')}
-        </h4>
-        <p style="font-weight:700; margin-bottom:0.5rem;">${res.diagnosticoOrientativo}</p>
+    var box = document.getElementById('resultadoAmslerBox');
+    if (!box) return;
+
+    var clase = res.urgencia === 'urgente' ? 'res-urgente' : (res.urgencia === 'preferente' ? 'res-preferente' : 'res-normal');
+
+    box.innerHTML = `
+      <div class="result-alert ${clase}">
+        <h4 style="font-size:1.15rem; margin-bottom:0.25rem;">${res.diagnosticoOrientativo}</h4>
         <p style="font-size:0.95rem; line-height:1.4;">${res.recomendacion}</p>
+        ${res.afectacionCentralFoveal ? '<div style="margin-top:6px; font-weight:700;">⚠️ AFECTACIÓN EN ZONA CENTRAL FOVEAL (<3.5º)</div>' : ''}
       </div>
     `;
-    rBox.innerHTML = html;
   }
-
-  // ------------------------------------------------------------------ Pestaña Contraste
-  var digitosPrueba = [2, 3, 5, 6, 7, 8, 9];
 
   function renderContrast() {
-    nivelContrasteActual = 1;
-    generarPasoContraste();
-  }
-
-  function generarPasoContraste() {
-    if (nivelContrasteActual > 8) {
-      finalizarContraste(8);
-      return;
-    }
-
-    digitoCorrecto = digitosPrueba[Math.floor(Math.random() * digitosPrueba.length)];
+    var main = document.getElementById('mainContent');
     var info = VisionGrid.NIVELES_CONTRASTE[nivelContrasteActual - 1];
 
-    var html = `
-      <div style="text-align:center; margin-bottom:1rem;">
-        <h3 style="font-size:1.25rem;">Test de Sensibilidad al Contraste (Pelli-Robson)</h3>
-        <p style="color:var(--text-muted); font-size:0.9rem;">
-          Nivel ${nivelContrasteActual} de 8 · Contraste: ${info.contrastePct}% (logCS: ${info.logCS.toFixed(2)})
-        </p>
+    main.innerHTML = `
+      <h3 style="font-size:1.25rem; margin-bottom:0.35rem;">Test de Sensibilidad al Contraste (Pelli-Robson Adaptado)</h3>
+      <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">
+        La pérdida de contraste es el signo más temprano del <strong>Glaucoma</strong> (daño del nervio óptico) y suele pasar desapercibido en pruebas de agudeza visual estándar. Pon el brillo de tu pantalla al 80-100% y selecciona el número que ves en el recuadro blanco:
+      </p>
+
+      <div style="font-size:0.85rem; color:var(--primary); font-weight:700; margin-bottom:0.5rem;">
+        Nivel ${nivelContrasteActual} / 8 (Contraste ${info.contrastePct}% · logCS ${info.logCS})
       </div>
 
       <div class="contrast-stage">
-        <span class="contrast-text" style="color: ${info.hexColor};">${digitoCorrecto}</span>
+        <div class="contrast-text" style="color:${info.hexColor};">${digitoCorrecto}</div>
       </div>
 
-      <p style="text-align:center; font-size:0.95rem; color:var(--text-muted); margin-bottom:0.75rem;">¿Qué número ves dentro del cuadro blanco?</p>
-
       <div class="contrast-buttons">
-        ${[2, 3, 4, 5, 6, 7, 8, 9, 0].map(function (n) {
+        ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (n) {
           return '<button class="btn-digit" onclick="responderContraste(' + n + ')">' + n + '</button>';
         }).join('')}
       </div>
 
-      <button class="btn btn-secondary" onclick="finalizarContraste(${nivelContrasteActual - 1})">No distingo ningún número</button>
+      <div id="resultadoContrasteBox"></div>
     `;
-
-    document.getElementById('mainContent').innerHTML = html;
   }
 
-  function responderContraste(numeroPulsado) {
-    if (numeroPulsado === digitoCorrecto) {
-      nivelContrasteActual++;
-      generarPasoContraste();
+  function responderContraste(num) {
+    if (num === digitoCorrecto) {
+      if (nivelContrasteActual < 8) {
+        nivelContrasteActual++;
+        digitoCorrecto = Math.floor(Math.random() * 9) + 1;
+        renderContrast();
+      } else {
+        mostrarFinContraste(true);
+      }
     } else {
-      finalizarContraste(Math.max(1, nivelContrasteActual - 1));
+      mostrarFinContraste(false);
     }
   }
 
-  function finalizarContraste(nivelFinal) {
-    var res = VisionGrid.evaluarContraste(nivelFinal);
-
-    var html = `
-      <div style="text-align:center; padding:1.5rem; background:#0F172A; border-radius:14px; margin-bottom:1.5rem;">
-        <div style="font-size:3rem; margin-bottom:0.25rem;">${res.estado === 'optimo' ? '🌟' : (res.estado === 'moderado' ? '⚡' : '⚠️')}</div>
-        <h3 style="font-size:1.5rem; font-weight:800;">Nivel alcanzado: ${res.nivelAlcanzado} de 8</h3>
-        <p style="color:var(--primary); font-weight:700; font-size:1.1rem; margin-top:0.25rem;">
-          Sensibilidad al contraste: logCS ${res.logCS.toFixed(2)}
-        </p>
+  function mostrarFinContraste(exitoTotal) {
+    var evalRes = VisionGrid.evaluarContraste(nivelContrasteActual);
+    var box = document.getElementById('resultadoContrasteBox');
+    box.innerHTML = `
+      <div class="result-alert ${evalRes.estado === 'optimo' ? 'res-normal' : (evalRes.estado === 'moderado' ? 'res-preferente' : 'res-urgente')}">
+        <h4>Sensibilidad al contraste alcanzada: Nivel ${evalRes.nivelAlcanzado} / 8 (logCS ${evalRes.logCS})</h4>
+        <p style="margin-top:0.25rem;">${evalRes.mensajeClinico}</p>
       </div>
-
-      <div class="result-alert res-${res.estado === 'optimo' ? 'normal' : (res.estado === 'moderado' ? 'preferente' : 'urgente')}">
-        <h4 style="font-size:1.15rem; font-weight:800; margin-bottom:0.35rem;">
-          ${res.estado === 'optimo' ? 'Visión de Contraste Saludable' : 'Pérdida de Sensibilidad al Contraste Detectada'}
-        </h4>
-        <p style="font-size:0.95rem; line-height:1.4;">${res.mensajeClinico}</p>
-      </div>
-
-      <div style="margin-top:1.5rem;">
-        <button class="btn" onclick="renderContrast()">Repetir test de contraste</button>
+      <div style="text-align:center; margin-top:1rem;">
+        <button class="btn btn-secondary" onclick="nivelContrasteActual=1; digitoCorrecto=Math.floor(Math.random()*9)+1; renderContrast();">Reiniciar test de contraste</button>
       </div>
     `;
-
-    document.getElementById('mainContent').innerHTML = html;
   }
 
-  // Inicializar
-  renderAmsler();
+  function renderDossier() {
+    var main = document.getElementById('mainContent');
+    var dossier = VisionGrid.generarDossierRetinologo({
+      ojo: ojoSeleccionado,
+      amsler: {
+        lineasOnduladas: lineasOnduladasDetectadas,
+        zonasBorradas: zonasBorradasDetectadas,
+        zonasMarcadas: marcasAmsler
+      },
+      contrasteNivel: nivelContrasteActual
+    });
+
+    main.innerHTML = `
+      <h3 style="font-size:1.25rem; margin-bottom:0.35rem;">Dossier Oftalmológico para Retinólogo / Especialista</h3>
+      <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">
+        Informe estructurado con los cuadrantes retinianos y escala logCS para entregar en tu revisión oftalmológica:
+      </p>
+
+      <pre class="dossier">${dossier.textoPlano}</pre>
+
+      <div style="display:flex; gap:0.75rem; margin-top:1.25rem;">
+        <button class="btn" onclick="copiarDossier()">📋 Copiar Informe</button>
+        <button class="btn btn-secondary" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+      </div>
+    `;
+  }
+
+  function copiarDossier() {
+    var texto = document.querySelector('pre.dossier').textContent;
+    navigator.clipboard.writeText(texto).then(function () {
+      alert('Informe oftalmológico copiado al portapapeles.');
+    });
+  }
+
+  window.addEventListener('DOMContentLoaded', function () {
+    renderAmsler();
+  });
 </script>
+
 </body>
 </html>

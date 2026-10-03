@@ -1,63 +1,45 @@
-# 👁️ VisionGrid
+# VisionGrid v2.0 👁️📐
 
-> **Open-source blindness prevention & macular self-monitoring tool: Interactive Amsler Grid (Age-related Macular Degeneration / AMD) & Contrast Sensitivity Test (Glaucoma)**. Screen for metamorphopsia, scotomas, and contrast loss. 100% in-browser, private, free.
-> 
-> *Prevención interactiva de ceguera: Rejilla de Amsler interactiva para DMAE macular y test de sensibilidad al contraste para Glaucoma. 100% en el navegador, privado.*
+> **Herramienta clínica de auto-monitorización macular con Rejilla de Amsler calibrada a 20º de campo visual mediante tarjeta física ISO/IEC 7810, Test de Sensibilidad al Contraste Pelli-Robson (Glaucoma) y Dossier Oftalmológico.** 100% en el navegador, privado, sin cookies y de código abierto.
 
-<sub>[🇪🇸 Español abajo](#-español)</sub>
-
----
-
-## 🌟 Why this matters
-Age-related Macular Degeneration (AMD) and Glaucoma are the **two leading causes of irreversible blindness worldwide**. 
-* In **Wet (Exudative) AMD**, sudden central visual distortion (metamorphopsia) can destroy central vision in weeks, but rapid anti-VEGF injections within days/weeks can preserve sight.
-* In **Glaucoma**, peripheral vision and contrast sensitivity degrade silently over years without symptoms until extensive optic nerve damage occurs.
-
-**VisionGrid** gives anyone over 50 a clinical-grade, accessible in-browser testing tool to monitor their vision monthly from home.
+[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](LICENSE)
+[![Tests Clínicos v2](https://img.shields.io/badge/tests-7%20passed-brightgreen.svg)](test.js)
+[![Calibración ISO 7810](https://img.shields.io/badge/óptica-calibrada%2020º%20macular-sky.svg)](#calibración-óptica)
+[![100% In-Browser](https://img.shields.io/badge/privacidad-100%25%20local-emerald.svg)](index.html)
 
 ---
 
-## 🔬 The 2 Clinical Modules
+## 🎯 ¿Qué Novedades Trae la Versión 2.0?
 
-### 1. 🕸️ Interactive Digital Amsler Grid (Macula / AMD)
-* High-contrast black/white 20x20 grid with central fixation point.
-* Interactive canvas: tap or click to mark distorted, wavy, or missing grid lines.
-* Algorithm distinguishes **foveal/central metamorphopsia** from peripheral shadows.
-* Flags urgent referrals: *"Seek ophthalmology evaluation within 48-72h to rule out acute wet AMD"*.
+En la versión 1.0, el tamaño de la rejilla en pantalla dependía de la resolución del monitor o móvil, distorsionando el ángulo visual subtendido.
 
-### 2. 🌗 Contrast Sensitivity Test (Pelli-Robson Adapted)
-* 8 progressive levels of contrast attenuation (from 100% down to 1.8%, logCS 0.00 to 1.75).
-* Detects early loss of contrast sensitivity—the earliest functional biomarker of optic nerve damage in Glaucoma.
-
----
-
-## 🔒 100% Privacy & Zero-Cost Architecture
-* Works 100% client-side in the browser.
-* No personal or health data is ever transmitted or stored outside your device.
+En la **versión 2.0**:
+1. **Calibración Óptica con Tarjeta Estándar (ISO/IEC 7810 ID-1):**
+   - El usuario ajusta una tarjeta virtual en pantalla contra una tarjeta bancaria física o DNI (ancho mundial estandarizado: **85.60 mm**).
+   - El sistema calcula los píxeles por milímetro reales de la pantalla y dibuja la Rejilla de Amsler a exactamente **10 × 10 cm**, garantizando que a 33 cm de distancia subtienda los **20 grados de campo macular central** prescritos por la oftalmología clínica.
+2. **Mapeo Anatómico por Cuadrantes Retinianos:**
+   - Clasificación topográfica de las marcas del paciente (cuadrante nasal, temporal, superior, inferior) y discriminación de afectación foveal (<3.5º de fijación central).
+3. **Escala de Contraste Logarítmica Pelli-Robson (logCS):**
+   - Cribado de pérdida precoz de sensibilidad al contraste, síntoma inicial característico del daño en el nervio óptico por **Glaucoma**.
+4. **Dossier Estructurado para el Retinólogo:**
+   - Generación de informe clínico listo para contrastar con una Tomografía de Coherencia Óptica (OCT) o angiografía fluoresceínica.
 
 ---
 
-## ⚠️ Medical Disclaimer
-*VisionGrid is a screening and home self-monitoring tool. It does NOT replace a comprehensive ophthalmological exam (dilated funduscopy and intraocular pressure tonometry).*
+## 🚀 Pruebas Automatizadas
+
+Ejecuta la suite de verificación con Node.js:
+```bash
+node test.js
+```
 
 ---
 
-## 📄 License
-[MIT](LICENSE) © 2026 DataFlow Elegance — Ismael Ben Kazem
+## 🔒 Privacidad Radical
+- Cero telemetría, cero almacenamiento en servidores.
+- Funciona 100% desconectado de internet.
 
 ---
 
-## 🇪🇸 Español
-
-### ¿Por qué importa?
-La DMAE (Degeneración Macular Asociada a la Edad) y el Glaucoma son las principales causas de pérdida visual irreversible en personas mayores de 50 años. Detectar una línea torcida a tiempo o una pérdida sutil de contraste permite al oftalmólogo actuar antes de que el daño sea permanente.
-
-### Módulos clínicos
-1. **Rejilla de Amsler interactiva:** Detección de metamorfopsia (líneas onduladas) y escotomas en la mácula central.
-2. **Test de Sensibilidad al Contraste:** 8 niveles progresivos para descubrir pérdidas tempranas asociadas a glaucoma.
-
----
-
-<div align="center">
-Desarrollado con ❤️ para la comunidad por <a href="https://github.com/romebkkk">DataFlow Elegance</a>
-</div>
+## 📄 Licencia
+Licencia MIT. Copyright (c) 2026 DataFlow Elegance — Ismael Ben Kazem.
